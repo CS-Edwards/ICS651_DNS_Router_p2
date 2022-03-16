@@ -5,50 +5,53 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include "dnsutil.h"
 
 
-//TODO : create dnsutil.h file
 
-#define DOMMAX 63
-//domain name can be 63 chars max
+/**addAddrArr() 
+parses domainAddr string; adds domain name 
+and address to respective fields in Address struct
+status: completed and tested**/ 
 
-#define IPMAX 39
-//ip address can me 32 chars + colons= 39 max
+void addAddrArr(char *domAddr, Address *a){
+  
+ char *domainset, *ipset;
+ domainset = strtok(domAddr,"/"); //returns domain name
+ ipset =  strtok(NULL,"/"); //returns IP address
 
+ strcpy(a->domain, domainset); //assign value to struct
+ strcpy(a->ipaddr, ipset); //assign value to struct
+}
 
- struct Address{
-	char domain[DOMMAX];
-	char ipaddr[IPMAX];
+void printAddr(Address *a){
 
-};
+ printf("\n Domain: [%s] \n",a->domain);
+ printf("\n IP Address: [%s] \n",a->ipaddr);
+ 
+}
 
-//typedef struct address Address;
-
-
+#ifdef RUN_UTIL_TEST
 int main(){
 
+ printf("\n ::Begin RUN_UTIL_TEST:: \n");
 
-
-struct  Address a1;
-//struct  Address *aptr = &a1;
-
- char domainin[] = "ics651.uhm/1.2.3.4";
-
- char *token1, *token2;
- token1 = strtok(domainin,"/"); //returns domain name
- token2 =  strtok(NULL,"/"); //returns IP address
-
-
- printf("Token 1, Domain Name: [%s] \n",token1);
- printf("Token 2, IP Address: [%s] \n", token2);
-
-
- strcpy(a1.domain, token1); //assign value to struct
- printf("In Stuct domain: [%s] \n", a1.domain);
+ //Funtion Test for addAddrArr
+ Address a1;
+ char domainin[] = "test.uhm/T.3.5.T";
+ addAddrArr(domainin,&a1);
+ printf("In stuct domain: [%s] \n", a1.domain);
+ printf("In stuct IP address: [%s] \n", a1.ipaddr);
+ 
+ //Funtion Test for printArr
+ printAddr(&a1);
+ 
+ //no code below this line
+ printf("\n ::END RUN_UTIL_TEST:: \n");
 return 0;
 }
 
-
+#endif /* RUN_UTIL_TEST */
 
 
 
