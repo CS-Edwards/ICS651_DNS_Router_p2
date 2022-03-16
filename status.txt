@@ -11,4 +11,5 @@ SYSTEM: Ubuntu Linux
 
 TESTING LOG:
 3.8.22 No Tests
-3.15.22 Accepts Arguments from Main
+3.15.22 (1) Accepts Arguments from Main;(2)dnsutil.h. and dnsutil.c; (3) addAddrArr() created,tested,completed;
+NEW ISSUE 1: dnsp2.c dnsutil.c to executable; produces Segmentaion Fault (core dumped)
