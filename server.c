@@ -7,11 +7,13 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include "dnsutil.h"
 
-#define PORT     8080
-#define MAXINBUFF 67000 //atleast 65536 (defined in project spec)
+#define PORT     12345   //changed from 8080
+#define MAXINBUFF 65536 //atleast 65536 (defined in project spec)
 #define MAXOUTBUFF 512  //512 bytes (defined in RFC)
 #define TID 2 //transaction ID - 2 bytes
+
 
 void printQuery(unsigned char *buffIn);
 
@@ -19,9 +21,19 @@ void printQuery(unsigned char *buffIn);
 // Driver code
 int main() {
     int sockfd;
-    unsigned char buffer[MAXINBUFF]; //byte array
+    char buffer[MAXINBUFF]; 
+    char buffout[MAXOUTBUFF];
     char *hello = "Hello from server"; //TODO Remove
-    struct sockaddr_in servaddr, cliaddr;
+    struct sockaddr_in servaddr, reqaddr;
+    dnsPacket *packet;
+    dnsReply  *reply_packet;
+    
+    //offset for buffer
+    int *offset = calloc(1,sizeof(int));
+    int o_init=0;
+    
+    memcpy(offset,&o_init,sizeof(int));
+    
        
     // Creating socket file descriptor
     if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
@@ -30,7 +42,7 @@ int main() {
     }
        
     memset(&servaddr, 0, sizeof(servaddr));
-    memset(&cliaddr, 0, sizeof(cliaddr));
+    memset(&reqaddr, 0, sizeof(reqaddr));
        
     // Filling server information
     servaddr.sin_family    = AF_INET; // IPv4
@@ -48,23 +60,30 @@ int main() {
     int j =0;//CE added iterator for loop
        
     while(1){   
-    int len, n;
+    int len, r; 
    
-    len = sizeof(cliaddr);  //len is value/resuslt
+    len = sizeof(reqaddr);  //len is value/resuslt
    
-    n = recvfrom(sockfd, (unsigned char *)buffer, MAXINBUFF, 
-                MSG_WAITALL, ( struct sockaddr *) &cliaddr,
-                &len);
+    r = recvfrom(sockfd,buffer, MAXINBUFF, 
+                0, ( struct sockaddr *) &reqaddr,
+                &len); //r is request size
+     
+     
+     packet=calloc(1,sizeof(dnsPacket)); //allocate memory for one dnsPacket; set allocated memory to 0           
+     processDNS(packet, buffer, r); 
+     printPacket(packet);          
+                
+    
     //buffer[n] = '\0';
     //printf("Client : %s\n", buffer);
     
     //print data from dig query
-    printQuery(buffer);
+    //printQuery(buffer);
     
     /******DNS Response Build*******/
     
     //Transaction ID, first two bytes of query
-    unsigned char transID[TID]; //= buffer[0:2];
+    unsigned char transID[TID]; //
     
     
     
@@ -79,24 +98,62 @@ int main() {
     printf("\n Transaction ID: ");
     for(int i=0;i<size;i++){
     	printf("%X ",transID[i]);
+    	to_buff(&transID[i],buffout,offset);
         }
     printf("\n");
     
+    //FLAGS: Response
+    u_int8_t flags=10000100 & 0xFF; //QR response bit on (1), AA on (1)
+    u_int8_t flags2=00000000 & 0xFF;
+    
+    //u_int8_t flags=0xE4;
+    //u_int8_t flags2=0x00; 
+    //u_int16_t flags = 0x8400;
+        
+    //printf("\n u_int8_t response= [%u] \n",flags);
+    to_buff(&flags,buffout,offset);
+    
+    //printf("\n u_int8_t response= [%u] \n",flags2);
+    to_buff(&flags2,buffout,offset);
+    
+    //QDCOUNT
+    
+    
+    //ANCOUNT
+    
+    
+    //NSCOUNT
+    
+    
+    //ARCOUNT
     
     
     /**************************/
     //response
-    sendto(sockfd, (const char *)hello, strlen(hello), 
-        MSG_CONFIRM, (const struct sockaddr *) &cliaddr,
+    
+    reply_packet=calloc(1,sizeof(dnsReply));
+    
+    
+    //sendto(sockfd, (const char *)hello, strlen(hello), 
+     //   MSG_CONFIRM, (const struct sockaddr *) &reqaddr,
+      //      len);
+    
+    
+    sendto(sockfd, buffout, sizeof(buffout)/sizeof(buffout[0]), 
+        MSG_CONFIRM, (const struct sockaddr *) &reqaddr,
             len);
+            
             
     printf("Hello message sent.[%d] \n",j);
     j++;
     
     } 
-       
+    
+    free(packet); //free allocated memory   
     return 0;
 }
+
+
 
 //TODO: add to dnstil.c and .h
 //print data from dig query
