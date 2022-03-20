@@ -7,38 +7,19 @@
 #include <assert.h>
 #include <netinet/in.h>
 #include "dnsutil.h"
+#include "rr_linkedlist.h"
 
 
 
-/**addAddrArr() 
-parses domainAddr string; adds domain name 
-and address to respective fields in Address struct
-status: completed and tested**/ 
-
-void addAddrArr(char *domAddr, Address *a){
-  
- char *domainset, *ipset;
- domainset = strtok(domAddr,"/"); //returns domain name
- ipset =  strtok(NULL,"/"); //returns IP address
-
- strcpy(a->domain, domainset); //assign value to struct
- strcpy(a->ipaddr, ipset); //assign value to struct
-}
-
-void printAddr(Address *a){
-
- printf("\n Domain: [%s] \n",a->domain);
- printf("\n IP Address: [%s] \n",a->ipaddr);
- 
-}
 
 void printPacket(dnsPacket *dpacketin){
  printf("print DNS Packet - to be implemented \n");
  printHeader(&dpacketin->pheader);
 
 }
+
 void printHeader(dnsHeader *dheadin){
- printf("print DNS Header - to be implemented \n");
+ printf("PACKET HEADER: \n");
  printf("TID: [%X] \n",dheadin->trans_id);
  printf("QR: [%u] \n",dheadin->qr); //0
  printf("OPCODE: [%u] \n",dheadin->opcode); //0
@@ -52,32 +33,26 @@ void printHeader(dnsHeader *dheadin){
  printf("ANCOUNT: [%u] \n",dheadin->ancount);
  printf("NSCOUNT: [%u] \n",dheadin->nscount);
  printf("ARCOUNT: [%u] \n",dheadin->arcount);
- 
-
 }
 
-int processDNS(dnsPacket *packetin, void *datain, u_int16_t size){
+//processDNS: ret ip in query
+//TODO: FIX does not proccess full query
+char* processDNS(dnsPacket *packetin, void *datain, u_int16_t size){
  printf("print DNS Processing - to be implemented \n");
  processHDR(&packetin->pheader,datain);
+ packetin->data=malloc(size-12);  //allocate mem (data - 12 byte header)
  
- //allocate mem (data - 12 byte header)
- packetin->data=malloc(size-12);
- 
- //copy in data
  memcpy(packetin->data,datain+SIZE,size-SIZE);
- 
- //set size
  packetin->dsize = size-SIZE;
  
- //process question
- processQuest(&packetin->question, packetin->data, packetin->dsize);
- 
- return 1;
-
+ //process question 
+ return processQuest(&packetin->question, packetin->data, packetin->dsize);
 }
 
+//processHDR set members of header struct
+//TODO: FIX flag settings/ not setting correctly
 int processHDR(dnsHeader *headerin, void *datain){
- printf("print DNS HEADER - to be implemented \n");
+ //printf("print DNS HEADER - to be implemented \n");
  memcpy(headerin,datain,SIZE);
  
  headerin->trans_id = ntohs(headerin->trans_id);
@@ -85,110 +60,68 @@ int processHDR(dnsHeader *headerin, void *datain){
  headerin->ancount = ntohs(headerin->trans_id);
  headerin->nscount = ntohs(headerin->trans_id);
  headerin->arcount = ntohs(headerin->trans_id);
- 
- 
 }
 
-//set ip address string to dnsQuesion->question
-int processQuest(dnsQuestion *questin, void *datain, u_int16_t size){
-	printf("\n Process Questio: to be implemented \n");
+//processQuest: sets members in dnsQuestion stuct, ret: url from query
+//TODO: FIX hardcoded class and type; read from query/quest
+char* processQuest(dnsQuestion *questin, void *datain, u_int16_t size){
+	printf("\n PROCESS QUESTION \n");
 	
-	//allocate mem (ip name)
- 	questin->questname=malloc(size);
-	
-	//copy in data
- 	memcpy(questin->questname,datain,size);
- 	
- 	u_int16_t one = 1; //IN class and type A IPv4 
- 	u_int16_t twentyeight = 28; //type AAAA IPv6
- 	//questin->querytype = one;  //1= A; Host Name  (R.F.C. 1035, 3.2.2)
- 	questin->questclass = one; //1= IN ; Internet (R.F.C. 1035, 3.2.4)
- 	
- 	
- 	//questin->querytype = ntohs(questin->querytype); =0 did not work
- 	
- 	
- 	//print what is after strlen
- 	char* c = malloc(sizeof(c)*2);
- 	memcpy(c,datain+strlen(questin->questname),sizeof(c)*2);
- 	printf("\n ***** printing C **** \n");
- 	printf("\n C: [%s] \n",c);
- 	
-	//print ip address
-	int domsize = sizeof(datain)/sizeof(datain[0]);
+	questin->questname=malloc(size);//allocate mem (ip name)
+ 	char* url= malloc(sizeof(questin->questname));//return
 	
 	
-	printf("\n ***** QUESTION PRINT TEST **** \n");
-	//print datain minus 4 bytes for qtype and qclass
-	for(int i=0;i<strlen(questin->questname);i++){
-    	printf("%c ",questin->questname[i]); //cast void to char
-        }
-    	printf("\n");
+ 	memcpy(questin->questname,datain,size);//copy in data
+ 	
+ 	//set struct members
+ 	questin->questclass = IN; //1= IN ; Internet (R.F.C. 1035, 3.2.4)
+ 	questin->querytype = A;//hard coded
+ 	 	
+        printf("\n ***URL***: [%s] ", url);//blank
 	
+	strcpy(url,questin->questname);
+	printf("\n ***URL***: [%s] ", url);//set
 	
+	//for(int i=1;i<strlen(questin->questname);i++){
+	//printf("[%d]u:%c ",i,url[i]);}
 	
 	printQuestion(questin);
-	return 1;
-
+	return url;
 }
 
+//print_question
 void printQuestion(dnsQuestion *questin){
- printf("print Question - to be implemented \n");
+ printf("PRINT QUESTION  \n");
  printf("domain: [%s] \n",questin->questname);
  printf("type: [%u] \n",questin->querytype); //0
  printf("class: [%u] \n",questin->questclass); //0
-
-
-};
-
-
-int buildreply(dnsPacket *dp, dnsReply *dr){
-
-   //memcpy(questin->questname,datain,size);
-   
-   	//TOSET: Header
-   	//memcpy(&(dr->trans_id), &(dp->pheader.trans_id),16);
-   	
-   	//printf("dr->trans_id: [%u] \n",dr->trans_id);
-   	
-   	/**
-	u_int16_t trans_id:16; //16 bit transaction ID
-	u_int16_t qr:1; //query(0) or response(1)
-	u_int16_t qdcount:16; //number of entries in question section (1)
-	u_int16_t ancount:16; //number of resources records in answer section
-	u_int16_t nscount:16; //number of nameserver resource records
-	u_int16_t arcount:16; //number of resources in additional record sectin
-	
-	//TOSET: Question
-	char *questname; //domain name
-	u_int16_t querytype:16; //query type
-	u_int16_t questclass:16 ;//question class - IN for internet
-
-	//TOSET
-
-
-        **/
-
-
-return 1;};
-
-
-
-void to_buff(void* data, char * buffer, int * offset){
-
-	
-	memcpy(buffer+= *offset, data, sizeof(data));
-	
-	printf("\n buffer: [%s] \n",buffer);
-	printf("\n offset: [%d] \n",*offset);
-	
-	
-	//might need mem cpy
-	*offset+=sizeof(data); //increase offset for next to_buff call
-	printf("\n updated offset: [%d] \n",*offset);
-
 }
 
+
+
+//col_search: identify ipv6 addr with ':', ret 1 ipv6
+int col_search(char *ip_addr){
+
+	char *col = {":"};
+	for (int i =0; i<strlen(ip_addr);i++){
+		if (ip_addr[i] == col[0]){
+		//printf("\n COL_SEARCH: FOUND : -- BREAKING OUT OF LOOP");
+		return 1;
+		}	
+	}
+//printf("\n COL_SEARCH: LOOP COMPLETE no : found");
+return 0;}
+
+//to_buff: sent pieces of DNS reply to send buffer
+void to_buff(void* data, char * buffer, int * offset){
+       	
+	memcpy(buffer+= *offset, data, sizeof(data));
+	
+	//printf("\n buffer: [%s] \n",buffer);
+	//printf("\n offset: [%d] \n",*offset);
+	*offset+=sizeof(data); //increase offset for next to_buff call
+	//printf("\n updated offset: [%d] \n",*offset);
+}
 
 
 
@@ -215,15 +148,36 @@ return 0;
 #endif /* RUN_UTIL_TEST */
 
 
-/****************************************	
-		//TODO: populate  Struct Addr array size of argc
-		
-		//FIX: core dump -- idea copy domAddr stinrg to variable char *copy w. str copy (or memcopy idk) ; also copy pointer to address array? ::TEST IN UTIL FILE
-		
-		//addAddrArr(argv[i], &addressArr[j]); //&?
-		//printAddr(&addressArr[j]);
-		//j++;
-
-******************************************************/
+//unused functions
 
 
+
+
+
+/**DNU: did not use **/
+void addAddrArr(char *domAddr, Address *a){
+  
+ char *domainset, *ipset;
+ domainset = strtok(domAddr,"/"); //returns domain name
+ ipset =  strtok(NULL,"/"); //returns IP address
+
+ strcpy(a->domain, domainset); //assign value to struct
+ strcpy(a->ipaddr, ipset); //assign value to struct
+}
+
+/**DNU: did not use **/
+void printAddr(Address *a){
+
+ printf("\n Domain: [%s] \n",a->domain);
+ printf("\n IP Address: [%s] \n",a->ipaddr);
+ 
+}
+
+/**DNU: did not use **/
+void printQuery(unsigned char *buffIn){
+ 
+ for(int i=0;i<MAXINBUFF;i++){
+    	printf("%X ",buffIn[i]);
+        }
+    printf("\n");
+}
