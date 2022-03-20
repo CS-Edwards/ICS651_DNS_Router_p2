@@ -1,15 +1,19 @@
 SYSTEM: Ubuntu Linux
+Status: runs with bug
+
+BUGS:
+1: Resource records linked list: if multiple domain.name/ip.address entered in main, last file over-writes previous record
+
+2: Parsing Query: dns header struct,question struct does not parse from query buffer correctly (compared to wireshark values)
+
+3: Reply to query: sends malformed reply to query with correct transaction ID (see in wireshark)
+
+TESTING :
+1: DIG : server accepts DIG queries 
+2: COMMAND LINE: accepts arguments from main
+3: DIG: can partially parse query (wireshark)
+4: REPLY: can send partial DIG Reply  
+5: QUERY+RESOURCE RECORD MATCH: able to identify matching record for queried url name.
 
 
 
-
-
-
-
-
-
-
-TESTING LOG:
-3.8.22 No Tests
-3.15.22 (1) Accepts Arguments from Main;(2)dnsutil.h. and dnsutil.c; (3) addAddrArr() created,tested,completed;
-NEW ISSUE 1: dnsp2.c dnsutil.c to executable; produces Segmentaion Fault (core dumped)

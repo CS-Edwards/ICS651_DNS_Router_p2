@@ -1,0 +1,17 @@
+3.15.22 (1) Accepts Arguments from main;(2)dnsutil.h. and dnsutil.c; (3) addAddrArr() created,tested,completed;
+
+NEW ISSUE 1: dnsp2.c dnsutil.c to executable; produces Segmentaion Fault (core dumped)
+
+3.16.22 (1)draft server running (server.c), accepts dig:
+	dig @localhost -p 8080
+	Warning/Error output (expected)
+	;;Warning: ID mismatch...
+	;;Warning:query response not set
+	
+	(2)DNS Response (in prog): Transaction ID; first two bytes tested with dig; unsuccessful 
+	
+	
+3.17.22 implemented dnsHeader struct and printHeader()  		function; compiled and runs --outputs do not match wireshark;
+	place holder functions for 			processPacket(),printPacket()
+	
+	**Updated wireshare DNS port to include testpot 12345, transcation ID matches wireshark**
